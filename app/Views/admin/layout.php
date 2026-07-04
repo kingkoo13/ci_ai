@@ -101,9 +101,14 @@
                             <i class="fa-solid fa-store"></i>
                             <span class="menu-label">Stores</span>
                         </div>
-                        <ul class="submenu-list">
                             <li class="submenu-item <?= ($submenu == 'configuration') ? 'active' : '' ?>">
                                 <a href="<?= base_url('admin/stores/configuration') ?>" class="submenu-link">Configuration</a>
+                            </li>
+                            <li class="submenu-item <?= ($submenu == 'attributes') ? 'active' : '' ?>">
+                                <a href="<?= base_url('admin/stores/attributes') ?>" class="submenu-link">Product Attributes</a>
+                            </li>
+                            <li class="submenu-item <?= ($submenu == 'sets') ? 'active' : '' ?>">
+                                <a href="<?= base_url('admin/stores/attributes/sets') ?>" class="submenu-link">Attribute Sets</a>
                             </li>
                         </ul>
                     </li>

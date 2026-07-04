@@ -35,6 +35,42 @@ class Orders extends BaseController
             return redirect()->to(base_url('admin/sales/orders'));
         }
 
+        // Handle POST update of custom attributes
+        if ($this->request->getMethod() === 'POST' || $this->request->is('post')) {
+            $db->transStart();
+            
+            $db->table('eav_attribute_values')
+               ->where('entity_type', 'order')
+               ->where('entity_id', $id)
+               ->delete();
+
+            $orderAttrs = $this->request->getPost('attributes') ?: [];
+            $attrInsert = [];
+            foreach ($orderAttrs as $attrId => $value) {
+                if ($value !== null && $value !== '') {
+                    $attrInsert[] = [
+                        'entity_type'  => 'order',
+                        'entity_id'    => $id,
+                        'attribute_id' => $attrId,
+                        'value'        => $value
+                    ];
+                }
+            }
+            if (!empty($attrInsert)) {
+                $db->table('eav_attribute_values')->insertBatch($attrInsert);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                session()->setFlashdata('error', 'Failed to update order custom attributes.');
+            } else {
+                session()->setFlashdata('success', 'Order custom attributes updated successfully.');
+            }
+
+            return redirect()->to(base_url('admin/sales/orders/view/' . $id));
+        }
+
         // Fetch Customer details & addresses
         $customer = null;
         $address = null;
@@ -54,15 +90,39 @@ class Orders extends BaseController
         $invoices = $db->table('invoices')->where('order_id', $id)->get()->getResult();
         $shipments = $db->table('shipments')->where('order_id', $id)->get()->getResult();
 
+        // Fetch order custom attributes
+        $orderAttributes = $db->table('eav_attributes')
+                              ->where('entity_type', 'order')
+                              ->get()
+                              ->getResult();
+        foreach ($orderAttributes as $attr) {
+            if ($attr->input_type === 'select') {
+                $attr->options = $db->table('eav_attribute_options')->where('attribute_id', $attr->id)->get()->getResult();
+            }
+        }
+
+        // Fetch existing values
+        $orderValuesList = $db->table('eav_attribute_values')
+                             ->where('entity_type', 'order')
+                             ->where('entity_id', $id)
+                             ->get()
+                             ->getResult();
+        $orderValues = [];
+        foreach ($orderValuesList as $v) {
+            $orderValues[$v->attribute_id] = $v->value;
+        }
+
         $data = [
-            'menu'      => 'sales',
-            'submenu'   => 'orders',
-            'order'     => $order,
-            'customer'  => $customer,
-            'address'   => $address,
-            'items'     => $items,
-            'invoices'  => $invoices,
-            'shipments' => $shipments,
+            'menu'            => 'sales',
+            'submenu'         => 'orders',
+            'order'           => $order,
+            'customer'        => $customer,
+            'address'         => $address,
+            'items'           => $items,
+            'invoices'        => $invoices,
+            'shipments'       => $shipments,
+            'orderAttributes' => $orderAttributes,
+            'orderValues'     => $orderValues,
         ];
 
         return view('admin/sales/orders/view', $data);

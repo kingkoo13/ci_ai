@@ -125,6 +125,13 @@
                         <textarea id="description" name="description" rows="5" class="form-control" placeholder="Category descriptions..."><?= $selectedCategory ? esc($selectedCategory->description) : '' ?></textarea>
                     </div>
                 </div>
+
+                <div style="margin-top:25px; border-top:1px solid var(--color-border-light); padding-top:15px;">
+                    <h3 style="font-size:14px; font-weight:700; color:var(--color-text); margin-bottom:15px;">Category Custom Attributes</h3>
+                    <div id="category-attributes-container">
+                        <p style="color: var(--color-text-muted); font-style: italic;">Loading custom attributes...</p>
+                    </div>
+                </div>
             </form>
         </div>
     </main>
@@ -155,6 +162,23 @@
         }
     }
 
+    // Load category-specific EAV attributes
+    function loadCategoryAttributes() {
+        const container = document.getElementById('category-attributes-container');
+        if (!container) return;
+
+        const categoryId = document.getElementById('cat-id').value || 0;
+        
+        fetch('<?= base_url('admin/catalog/categories/getAttributes') ?>?category_id=' + categoryId)
+            .then(response => response.text())
+            .then(html => {
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                container.innerHTML = '<p style="color: var(--color-danger);">Failed to load custom attributes.</p>';
+            });
+    }
+
     // Handles resetting form to build a new category (Add root/subcategory)
     function clearForm(parentId, titleText) {
         document.getElementById('form-title').innerText = titleText;
@@ -171,6 +195,9 @@
             parentSelect.value = '';
         }
         
+        // Reload custom attributes with empty fields
+        loadCategoryAttributes();
+        
         // Focus the name input
         document.getElementById('name').focus();
     }
@@ -183,5 +210,10 @@
             form.submit();
         }
     }
+
+    // Trigger initial load on page load
+    document.addEventListener("DOMContentLoaded", function() {
+        loadCategoryAttributes();
+    });
 </script>
 <?= $this->endSection() ?>

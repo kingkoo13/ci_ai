@@ -55,7 +55,70 @@ class AdminPanelSeeder extends Seeder
         ];
         $this->db->table('categories')->insertBatch($categories);
 
-        // 5. Products
+        // 5. EAV Attribute Sets
+        $attributeSets = [
+            ['id' => 1, 'name' => 'Default', 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 2, 'name' => 'Apparel', 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 3, 'name' => 'Footwear', 'created_at' => date('Y-m-d H:i:s')],
+        ];
+        $this->db->table('attribute_sets')->insertBatch($attributeSets);
+
+        // 6. EAV Attributes & Options
+        // Entity types: product, category, customer, address, order
+        $eavAttributes = [
+            // Product Attributes
+            ['id' => 1, 'entity_type' => 'product', 'attribute_code' => 'color', 'frontend_label' => 'Color', 'input_type' => 'select', 'attribute_set_id' => 2, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 2, 'entity_type' => 'product', 'attribute_code' => 'size', 'frontend_label' => 'Size', 'input_type' => 'text', 'attribute_set_id' => 2, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 3, 'entity_type' => 'product', 'attribute_code' => 'brand', 'frontend_label' => 'Brand', 'input_type' => 'select', 'attribute_set_id' => 1, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 4, 'entity_type' => 'product', 'attribute_code' => 'shoe_size', 'frontend_label' => 'Shoe Size', 'input_type' => 'text', 'attribute_set_id' => 3, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            
+            // Category Attributes
+            ['id' => 5, 'entity_type' => 'category', 'attribute_code' => 'category_image', 'frontend_label' => 'Category Banner Image', 'input_type' => 'text', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 6, 'entity_type' => 'category', 'attribute_code' => 'custom_layout', 'frontend_label' => 'Category Custom Layout', 'input_type' => 'select', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 7, 'entity_type' => 'category', 'attribute_code' => 'is_anchor', 'frontend_label' => 'Is Anchor', 'input_type' => 'boolean', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            
+            // Customer Attributes
+            ['id' => 8, 'entity_type' => 'customer', 'attribute_code' => 'date_of_birth', 'frontend_label' => 'Date of Birth', 'input_type' => 'text', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 9, 'entity_type' => 'customer', 'attribute_code' => 'vat_id', 'frontend_label' => 'Tax/VAT Number', 'input_type' => 'text', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 10, 'entity_type' => 'customer', 'attribute_code' => 'gender', 'frontend_label' => 'Gender', 'input_type' => 'select', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+
+            // Address Attributes
+            ['id' => 11, 'entity_type' => 'address', 'attribute_code' => 'delivery_instructions', 'frontend_label' => 'Delivery Instructions', 'input_type' => 'textarea', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 12, 'entity_type' => 'address', 'attribute_code' => 'gate_code', 'frontend_label' => 'Building Gate Code', 'input_type' => 'text', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+
+            // Order Attributes
+            ['id' => 13, 'entity_type' => 'order', 'attribute_code' => 'preferred_delivery_date', 'frontend_label' => 'Preferred Delivery Date', 'input_type' => 'text', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 14, 'entity_type' => 'order', 'attribute_code' => 'gift_message', 'frontend_label' => 'Gift Wrap Message', 'input_type' => 'textarea', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+        ];
+        $this->db->table('eav_attributes')->insertBatch($eavAttributes);
+
+        // Options for selects
+        $eavAttributeOptions = [
+            // Color options (attribute_id 1)
+            ['attribute_id' => 1, 'option_value' => 'Red'],
+            ['attribute_id' => 1, 'option_value' => 'Blue'],
+            ['attribute_id' => 1, 'option_value' => 'Black'],
+            ['attribute_id' => 1, 'option_value' => 'Green'],
+
+            // Brand options (attribute_id 3)
+            ['attribute_id' => 3, 'option_value' => 'Nike'],
+            ['attribute_id' => 3, 'option_value' => 'Adidas'],
+            ['attribute_id' => 3, 'option_value' => 'Puma'],
+            ['attribute_id' => 3, 'option_value' => 'Vintage'],
+
+            // Category Custom Layout options (attribute_id 6)
+            ['attribute_id' => 6, 'option_value' => 'Grid View Only'],
+            ['attribute_id' => 6, 'option_value' => 'List View Only'],
+            ['attribute_id' => 6, 'option_value' => 'Custom Static Block Only'],
+
+            // Gender options (attribute_id 10)
+            ['attribute_id' => 10, 'option_value' => 'Male'],
+            ['attribute_id' => 10, 'option_value' => 'Female'],
+            ['attribute_id' => 10, 'option_value' => 'Unspecified'],
+        ];
+        $this->db->table('eav_attribute_options')->insertBatch($eavAttributeOptions);
+
+        // 7. Products (Updated with attribute_set_id)
         $products = [
             [
                 'id' => 1,
@@ -69,6 +132,7 @@ class AdminPanelSeeder extends Seeder
                 'is_in_stock' => 1,
                 'status' => 1,
                 'image_url' => 'assets/images/shoes-01.jpg',
+                'attribute_set_id' => 3, // Footwear
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ],
@@ -84,6 +148,7 @@ class AdminPanelSeeder extends Seeder
                 'is_in_stock' => 1,
                 'status' => 1,
                 'image_url' => 'assets/images/jacket-02.jpg',
+                'attribute_set_id' => 2, // Apparel
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ],
@@ -99,6 +164,7 @@ class AdminPanelSeeder extends Seeder
                 'is_in_stock' => 1,
                 'status' => 1,
                 'image_url' => 'assets/images/shirt-03.jpg',
+                'attribute_set_id' => 2, // Apparel
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ],
@@ -114,6 +180,7 @@ class AdminPanelSeeder extends Seeder
                 'is_in_stock' => 1,
                 'status' => 1,
                 'image_url' => 'assets/images/watch-04.jpg',
+                'attribute_set_id' => 1, // Default
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ],
@@ -129,6 +196,7 @@ class AdminPanelSeeder extends Seeder
                 'is_in_stock' => 1,
                 'status' => 1,
                 'image_url' => 'assets/images/backpack-05.jpg',
+                'attribute_set_id' => 1, // Default
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ]
@@ -148,7 +216,44 @@ class AdminPanelSeeder extends Seeder
         ];
         $this->db->table('product_categories')->insertBatch($productCategories);
 
-        // 6. Customers
+        // 8. EAV Seed Values
+        $eavValues = [
+            // Shoes size and brand values (product_id 1, attribute 4 (shoe_size) and attribute 3 (brand))
+            ['entity_type' => 'product', 'entity_id' => 1, 'attribute_id' => 4, 'value' => 'US 10.5'],
+            ['entity_type' => 'product', 'entity_id' => 1, 'attribute_id' => 3, 'value' => 'Nike'],
+
+            // Jacket color, size, material (product_id 2, attributes 1, 2)
+            ['entity_type' => 'product', 'entity_id' => 2, 'attribute_id' => 1, 'value' => 'Black'],
+            ['entity_type' => 'product', 'entity_id' => 2, 'attribute_id' => 2, 'value' => 'L'],
+
+            // Shirt color, size (product_id 3)
+            ['entity_type' => 'product', 'entity_id' => 3, 'attribute_id' => 1, 'value' => 'Blue'],
+            ['entity_type' => 'product', 'entity_id' => 3, 'attribute_id' => 2, 'value' => 'M'],
+
+            // Watch brand (product_id 4)
+            ['entity_type' => 'product', 'entity_id' => 4, 'attribute_id' => 3, 'value' => 'Vintage'],
+
+            // Category Attributes values: Category 2 (Men) layouts/banners (attributes 5, 6, 7)
+            ['entity_type' => 'category', 'entity_id' => 2, 'attribute_id' => 5, 'value' => 'assets/images/banner-men.jpg'],
+            ['entity_type' => 'category', 'entity_id' => 2, 'attribute_id' => 6, 'value' => 'Grid View Only'],
+            ['entity_type' => 'category', 'entity_id' => 2, 'attribute_id' => 7, 'value' => '1'],
+
+            // Customer Attributes values: Customer 1 (Jane Doe) (attributes 8, 9, 10)
+            ['entity_type' => 'customer', 'entity_id' => 1, 'attribute_id' => 8, 'value' => '1992-05-15'],
+            ['entity_type' => 'customer', 'entity_id' => 1, 'attribute_id' => 9, 'value' => 'US88371991'],
+            ['entity_type' => 'customer', 'entity_id' => 1, 'attribute_id' => 10, 'value' => 'Female'],
+
+            // Address Attributes values: Address 1 (Jane's address) (attributes 11, 12)
+            ['entity_type' => 'address', 'entity_id' => 1, 'attribute_id' => 11, 'value' => 'Please leave it at the gate if no one answers.'],
+            ['entity_type' => 'address', 'entity_id' => 1, 'attribute_id' => 12, 'value' => '#4819'],
+
+            // Order Attributes values: Order 1 (increment 100000001) (attributes 13, 14)
+            ['entity_type' => 'order', 'entity_id' => 1, 'attribute_id' => 13, 'value' => '2026-07-10'],
+            ['entity_type' => 'order', 'entity_id' => 1, 'attribute_id' => 14, 'value' => 'Happy birthday! Enjoy your gifts.'],
+        ];
+        $this->db->table('eav_attribute_values')->insertBatch($eavValues);
+
+        // 9. Customers
         $customers = [
             [
                 'id' => 1,
@@ -186,6 +291,7 @@ class AdminPanelSeeder extends Seeder
         // Customer Addresses
         $addresses = [
             [
+                'id' => 1,
                 'customer_id' => 1,
                 'street' => '100 Broadway Ave',
                 'city' => 'New York',
@@ -197,6 +303,7 @@ class AdminPanelSeeder extends Seeder
                 'is_default_shipping' => 1
             ],
             [
+                'id' => 2,
                 'customer_id' => 2,
                 'street' => '456 Market St',
                 'city' => 'San Francisco',
@@ -210,7 +317,7 @@ class AdminPanelSeeder extends Seeder
         ];
         $this->db->table('customer_addresses')->insertBatch($addresses);
 
-        // 7. Orders & Items
+        // 10. Orders & Items
         // Order 1: Complete order from 4 days ago
         $this->db->table('orders')->insert([
             'id' => 1,
@@ -331,7 +438,7 @@ class AdminPanelSeeder extends Seeder
             ],
             [
                 'order_id' => 3,
-                'product_id' => 5, // We can reuse product or use shirt
+                'product_id' => 5,
                 'sku' => 'backpack-05',
                 'name' => 'Waterproof Travel Laptop Backpack',
                 'price' => 49.99,
@@ -393,7 +500,7 @@ class AdminPanelSeeder extends Seeder
             'created_at' => date('Y-m-d H:i:s')
         ]);
 
-        // 8. CMS Pages
+        // 11. CMS Pages
         $cmsPages = [
             [
                 'title' => 'Home Page',
@@ -422,7 +529,7 @@ class AdminPanelSeeder extends Seeder
         ];
         $this->db->table('cms_pages')->insertBatch($cmsPages);
 
-        // 9. CMS Blocks
+        // 12. CMS Blocks
         $cmsBlocks = [
             [
                 'title' => 'Footer Links Block',

@@ -9,84 +9,66 @@ class Products extends BaseController
     public function index()
     {
         $db = \Config\Database::connect();
-        $builder = $db->table('products');
-
-        // Capture filters from request
-        $q = $this->request->getVar('q');
-        $id = $this->request->getVar('filter_id');
-        $sku = $this->request->getVar('filter_sku');
-        $name = $this->request->getVar('filter_name');
-        $priceMin = $this->request->getVar('filter_price_min');
-        $priceMax = $this->request->getVar('filter_price_max');
-        $qtyMin = $this->request->getVar('filter_qty_min');
-        $qtyMax = $this->request->getVar('filter_qty_max');
-        $status = $this->request->getVar('filter_status');
-
-        // Apply filters
-        if (!empty($q)) {
-            $builder->groupStart()
-                    ->like('name', $q)
-                    ->orLike('sku', $q)
-                    ->groupEnd();
-        }
-        if (!empty($id)) {
-            $builder->where('id', $id);
-        }
-        if (!empty($sku)) {
-            $builder->like('sku', $sku);
-        }
-        if (!empty($name)) {
-            $builder->like('name', $name);
-        }
-        if ($priceMin !== null && $priceMin !== '') {
-            $builder->where('price >=', $priceMin);
-        }
-        if ($priceMax !== null && $priceMax !== '') {
-            $builder->where('price <=', $priceMax);
-        }
-        if ($qtyMin !== null && $qtyMin !== '') {
-            $builder->where('qty >=', $qtyMin);
-        }
-        if ($qtyMax !== null && $qtyMax !== '') {
-            $builder->where('qty <=', $qtyMax);
-        }
-        if ($status !== null && $status !== '') {
-            $builder->where('status', $status);
-        }
-
-        // Clone builder for count
-        $countBuilder = clone $builder;
-        $totalCount = $countBuilder->countAllResults(false);
-
-        // Pagination setup
-        $perPage = 20;
-        $page = (int)($this->request->getVar('page') ?: 1);
-        if ($page < 1) $page = 1;
+        
+        // Paging & filtering variables
+        $page = (int)$this->request->getGet('page') ?: 1;
+        $perPage = 10;
         $offset = ($page - 1) * $perPage;
 
-        $products = $builder->orderBy('id', 'DESC')
+        $search = $this->request->getGet('search') ?: '';
+        $status = $this->request->getGet('status');
+
+        $builder = $db->table('products')
+                      ->select('products.*, attribute_sets.name as set_name')
+                      ->join('attribute_sets', 'attribute_sets.id = products.attribute_set_id', 'left');
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                    ->like('products.name', $search)
+                    ->orLike('products.sku', $search)
+                    ->groupEnd();
+        }
+
+        if ($status !== null && $status !== '') {
+            $builder->where('products.status', (int)$status);
+        }
+
+        // Count total matching records
+        $totalBuilder = clone $builder;
+        $totalRows = $totalBuilder->countAllResults(false);
+
+        $products = $builder->orderBy('products.id', 'DESC')
                             ->limit($perPage, $offset)
                             ->get()
                             ->getResult();
 
-        $totalPages = ceil($totalCount / $perPage);
+        $totalPages = ceil($totalRows / $perPage);
+
+        // Fetch category names for displaying in details inline
+        foreach ($products as $product) {
+            $catObjects = $db->table('product_categories')
+                             ->select('categories.name')
+                             ->join('categories', 'categories.id = product_categories.category_id')
+                             ->where('product_categories.product_id', $product->id)
+                             ->get()
+                             ->getResult();
+            
+            $catNames = array_map(function($c) {
+                return $c->name;
+            }, $catObjects);
+
+            $product->category_names = implode(', ', $catNames);
+        }
 
         $data = [
-            'menu'          => 'catalog',
-            'submenu'       => 'products',
-            'products'      => $products,
-            'q'             => $q,
-            'filter_id'     => $id,
-            'filter_sku'    => $sku,
-            'filter_name'   => $name,
-            'filter_price_min' => $priceMin,
-            'filter_price_max' => $priceMax,
-            'filter_qty_min' => $qtyMin,
-            'filter_qty_max' => $qtyMax,
-            'filter_status' => $status,
-            'page'          => $page,
-            'totalPages'    => $totalPages,
-            'totalCount'    => $totalCount,
+            'menu'        => 'catalog',
+            'submenu'     => 'products',
+            'products'    => $products,
+            'search'      => $search,
+            'status'      => $status,
+            'page'        => $page,
+            'totalPages'  => $totalPages,
+            'totalRows'   => $totalRows
         ];
 
         return view('admin/catalog/products/grid', $data);
@@ -111,6 +93,8 @@ class Products extends BaseController
                 return redirect()->back()->withInput();
             }
 
+            $db->transStart();
+
             $productData = [
                 'sku'               => $this->request->getPost('sku'),
                 'name'              => $this->request->getPost('name'),
@@ -122,6 +106,7 @@ class Products extends BaseController
                 'is_in_stock'       => $this->request->getPost('qty') > 0 ? 1 : 0,
                 'status'            => $this->request->getPost('status') ?? 1,
                 'image_url'         => $this->request->getPost('image_url') ?: 'assets/images/placeholder.jpg',
+                'attribute_set_id'  => $this->request->getPost('attribute_set_id') ?: 1, // Default to Default set
                 'created_at'        => date('Y-m-d H:i:s'),
                 'updated_at'        => date('Y-m-d H:i:s'),
             ];
@@ -142,20 +127,47 @@ class Products extends BaseController
                 $db->table('product_categories')->insertBatch($mappings);
             }
 
+            // Save custom EAV attributes
+            $customAttrs = $this->request->getPost('attributes') ?: [];
+            $attrInsert = [];
+            foreach ($customAttrs as $attrId => $value) {
+                if ($value !== null && $value !== '') {
+                    $attrInsert[] = [
+                        'entity_type'  => 'product',
+                        'entity_id'    => $productId,
+                        'attribute_id' => $attrId,
+                        'value'        => $value
+                    ];
+                }
+            }
+            if (!empty($attrInsert)) {
+                $db->table('eav_attribute_values')->insertBatch($attrInsert);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                session()->setFlashdata('error', 'Failed to save product.');
+                return redirect()->back()->withInput();
+            }
+
             session()->setFlashdata('success', 'The product has been saved successfully.');
             return redirect()->to(base_url('admin/catalog/products'));
         }
 
-        // Fetch category list for the category selector tab
+        // Fetch category list
         $categories = $db->table('categories')
-                         ->where('id >', 1) // skip Root Default Category
+                         ->where('id >', 1)
                          ->get()
                          ->getResult();
+
+        $sets = $db->table('attribute_sets')->get()->getResult();
 
         $data = [
             'menu'       => 'catalog',
             'submenu'    => 'products',
             'categories' => $categories,
+            'sets'       => $sets,
             'isEdit'     => false,
             'product'    => null,
             'mappedCats' => []
@@ -189,6 +201,8 @@ class Products extends BaseController
                 return redirect()->back()->withInput();
             }
 
+            $db->transStart();
+
             $productData = [
                 'sku'               => $this->request->getPost('sku'),
                 'name'              => $this->request->getPost('name'),
@@ -200,12 +214,13 @@ class Products extends BaseController
                 'is_in_stock'       => $this->request->getPost('qty') > 0 ? 1 : 0,
                 'status'            => $this->request->getPost('status') ?? 1,
                 'image_url'         => $this->request->getPost('image_url') ?: 'assets/images/placeholder.jpg',
+                'attribute_set_id'  => $this->request->getPost('attribute_set_id') ?: 1,
                 'updated_at'        => date('Y-m-d H:i:s'),
             ];
 
             $db->table('products')->where('id', $id)->update($productData);
 
-            // Re-map categories (delete old, add new)
+            // Re-map categories
             $db->table('product_categories')->where('product_id', $id)->delete();
             $categoriesSelected = $this->request->getPost('categories') ?: [];
             if (!empty($categoriesSelected)) {
@@ -217,6 +232,35 @@ class Products extends BaseController
                     ];
                 }
                 $db->table('product_categories')->insertBatch($mappings);
+            }
+
+            // Save custom EAV attributes
+            $db->table('eav_attribute_values')
+               ->where('entity_type', 'product')
+               ->where('entity_id', $id)
+               ->delete();
+
+            $customAttrs = $this->request->getPost('attributes') ?: [];
+            $attrInsert = [];
+            foreach ($customAttrs as $attrId => $value) {
+                if ($value !== null && $value !== '') {
+                    $attrInsert[] = [
+                        'entity_type'  => 'product',
+                        'entity_id'    => $id,
+                        'attribute_id' => $attrId,
+                        'value'        => $value
+                    ];
+                }
+            }
+            if (!empty($attrInsert)) {
+                $db->table('eav_attribute_values')->insertBatch($attrInsert);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                session()->setFlashdata('error', 'Failed to update product.');
+                return redirect()->back();
             }
 
             session()->setFlashdata('success', 'The product has been saved successfully.');
@@ -236,10 +280,13 @@ class Products extends BaseController
             return $item->category_id;
         }, $mappedCatObjects);
 
+        $sets = $db->table('attribute_sets')->get()->getResult();
+
         $data = [
             'menu'       => 'catalog',
             'submenu'    => 'products',
             'categories' => $categories,
+            'sets'       => $sets,
             'isEdit'     => true,
             'product'    => $product,
             'mappedCats' => $mappedCats
@@ -252,9 +299,11 @@ class Products extends BaseController
     {
         $db = \Config\Database::connect();
         
-        // Remove mappings and the product itself
+        $db->transStart();
+        $db->table('eav_attribute_values')->where('entity_type', 'product')->where('entity_id', $id)->delete();
         $db->table('product_categories')->where('product_id', $id)->delete();
         $db->table('products')->where('id', $id)->delete();
+        $db->transComplete();
 
         session()->setFlashdata('success', 'The product has been deleted.');
         return redirect()->to(base_url('admin/catalog/products'));
@@ -277,5 +326,80 @@ class Products extends BaseController
         }
 
         return redirect()->to(base_url('admin/catalog/products'));
+    }
+
+    // AJAX dynamic loading of product attributes
+    public function getAttributes()
+    {
+        $db = \Config\Database::connect();
+        $setId = (int)$this->request->getGet('set_id');
+        $productId = (int)$this->request->getGet('product_id') ?: 0;
+
+        // Fetch attributes of this set or global attributes
+        $attributes = $db->table('eav_attributes')
+                         ->where('entity_type', 'product')
+                         ->groupStart()
+                            ->where('attribute_set_id', $setId)
+                            ->orWhere('attribute_set_id', null)
+                         ->groupEnd()
+                         ->get()
+                         ->getResult();
+
+        if (empty($attributes)) {
+            echo '<p style="color:var(--color-text-muted); font-style:italic;">No custom attributes found for this set.</p>';
+            return;
+        }
+
+        // Fetch existing values for this product
+        $values = [];
+        if ($productId > 0) {
+            $valObjects = $db->table('eav_attribute_values')
+                             ->where('entity_type', 'product')
+                             ->where('entity_id', $productId)
+                             ->get()
+                             ->getResult();
+            foreach ($valObjects as $valObj) {
+                $values[$valObj->attribute_id] = $valObj->value;
+            }
+        }
+
+        // Build HTML forms dynamically
+        $html = '';
+        foreach ($attributes as $attr) {
+            $val = isset($values[$attr->id]) ? esc($values[$attr->id]) : '';
+            $required = $attr->is_required ? 'required' : '';
+            $reqStar = $attr->is_required ? ' <span class="required">*</span>' : '';
+
+            $html .= '<div class="form-group">';
+            $html .= '<label for="attr-' . $attr->id . '">' . esc($attr->frontend_label) . $reqStar . '</label>';
+            $html .= '<div class="form-control-wrapper">';
+
+            if ($attr->input_type === 'text') {
+                $html .= '<input type="text" id="attr-' . $attr->id . '" name="attributes[' . $attr->id . ']" value="' . $val . '" class="form-control" ' . $required . '>';
+            } elseif ($attr->input_type === 'textarea') {
+                $html .= '<textarea id="attr-' . $attr->id . '" name="attributes[' . $attr->id . ']" class="form-control" ' . $required . '>' . $val . '</textarea>';
+            } elseif ($attr->input_type === 'boolean') {
+                $selectedYes = ($val === '1') ? 'selected' : '';
+                $selectedNo = ($val === '0') ? 'selected' : '';
+                $html .= '<select id="attr-' . $attr->id . '" name="attributes[' . $attr->id . ']" class="form-control" style="width: 150px;" ' . $required . '>';
+                $html .= '<option value="0" ' . $selectedNo . '>No</option>';
+                $html .= '<option value="1" ' . $selectedYes . '>Yes</option>';
+                $html .= '</select>';
+            } elseif ($attr->input_type === 'select') {
+                $options = $db->table('eav_attribute_options')->where('attribute_id', $attr->id)->get()->getResult();
+                $html .= '<select id="attr-' . $attr->id . '" name="attributes[' . $attr->id . ']" class="form-control" style="width: 250px;" ' . $required . '>';
+                $html .= '<option value="">-- Select Option --</option>';
+                foreach ($options as $opt) {
+                    $selected = ($val === $opt->option_value) ? 'selected' : '';
+                    $html .= '<option value="' . esc($opt->option_value) . '" ' . $selected . '>' . esc($opt->option_value) . '</option>';
+                }
+                $html .= '</select>';
+            }
+
+            $html .= '<span class="form-note">Code: <code>' . esc($attr->attribute_code) . '</code></span>';
+            $html .= '</div></div>';
+        }
+
+        echo $html;
     }
 }

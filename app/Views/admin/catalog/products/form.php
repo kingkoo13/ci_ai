@@ -25,6 +25,7 @@
         <aside class="tabs-sidebar" aria-label="Product form sections">
             <ul class="tab-nav">
                 <li class="tab-nav-item active" onclick="switchTab(event, 'basic-tab')">Product Details</li>
+                <li class="tab-nav-item" onclick="switchTab(event, 'attributes-tab')">Custom Attributes</li>
                 <li class="tab-nav-item" onclick="switchTab(event, 'content-tab')">Content</li>
                 <li class="tab-nav-item" onclick="switchTab(event, 'categories-tab')">Categories</li>
                 <li class="tab-nav-item" onclick="switchTab(event, 'images-tab')">Images</li>
@@ -44,6 +45,20 @@
                             <option value="1" <?= (!$isEdit || $product->status == 1) ? 'selected' : '' ?>>Yes</option>
                             <option value="0" <?= ($isEdit && $product->status == 0) ? 'selected' : '' ?>>No</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="attribute_set_id">Attribute Set <span class="required">*</span></label>
+                    <div class="form-control-wrapper">
+                        <select id="attribute_set_id" name="attribute_set_id" class="form-control" style="width: 250px;" onchange="loadCustomAttributes(this.value)">
+                            <?php foreach ($sets as $set) : ?>
+                                <option value="<?= $set->id ?>" <?= (($isEdit && $product->attribute_set_id == $set->id) || (!$isEdit && $set->id == 1)) ? 'selected' : '' ?>>
+                                    <?= esc($set->name) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="form-note">Determines which custom attributes load in the attributes tab.</span>
                     </div>
                 </div>
 
@@ -85,7 +100,15 @@
                 </div>
             </div>
 
-            <!-- 2. Content Tab -->
+            <!-- 2. Custom Attributes Tab -->
+            <div id="attributes-tab" class="tab-panel">
+                <h2 class="form-section-title">Custom Attributes</h2>
+                <div id="attributes-loader-container">
+                    <p style="color: var(--color-text-muted); font-style: italic;">Loading custom attributes...</p>
+                </div>
+            </div>
+
+            <!-- 3. Content Tab -->
             <div id="content-tab" class="tab-panel">
                 <h2 class="form-section-title">Content</h2>
                 
@@ -104,7 +127,7 @@
                 </div>
             </div>
 
-            <!-- 3. Categories Tab -->
+            <!-- 4. Categories Tab -->
             <div id="categories-tab" class="tab-panel">
                 <h2 class="form-section-title">Categories</h2>
                 <p style="margin-bottom: 20px; color: var(--color-text-light);">Select the categories this product belongs to:</p>
@@ -123,7 +146,7 @@
                 </div>
             </div>
 
-            <!-- 4. Images Tab -->
+            <!-- 5. Images Tab -->
             <div id="images-tab" class="tab-panel">
                 <h2 class="form-section-title">Images</h2>
                 
@@ -173,5 +196,28 @@
             preview.src = "<?= base_url() ?>" + val;
         }
     }
+
+    // Load custom attributes dynamically
+    function loadCustomAttributes(setId) {
+        const container = document.getElementById('attributes-loader-container');
+        container.innerHTML = '<p style="color: var(--color-text-muted); font-style: italic;">Loading custom attributes...</p>';
+        
+        const productId = <?= $isEdit ? $product->id : 0 ?>;
+        
+        fetch('<?= base_url('admin/catalog/products/getAttributes') ?>?set_id=' + setId + '&product_id=' + productId)
+            .then(response => response.text())
+            .then(html => {
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                container.innerHTML = '<p style="color: var(--color-danger);">Failed to load custom attributes.</p>';
+            });
+    }
+
+    // Trigger initial load on page load
+    document.addEventListener("DOMContentLoaded", function() {
+        const setId = document.getElementById('attribute_set_id').value;
+        loadCustomAttributes(setId);
+    });
 </script>
 <?= $this->endSection() ?>

@@ -65,6 +65,82 @@
     </div>
 </div>
 
+<!-- Custom Order Attributes Card -->
+<?php if (!empty($orderAttributes)) : ?>
+<div class="dashboard-card" style="margin-bottom: 25px;">
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Custom Order Attributes</span>
+        <button type="button" class="btn btn-secondary" onclick="toggleEditAttributes()" style="padding: 4px 10px; font-size: 11px;"><i class="fa-solid fa-pen"></i> Edit Attributes</button>
+    </div>
+    <div class="card-body">
+        <!-- Display view -->
+        <div id="attributes-display-view">
+            <table class="grid-table" style="border:none; box-shadow: none;">
+                <tbody>
+                    <?php foreach ($orderAttributes as $attr) : ?>
+                        <?php 
+                        $val = isset($orderValues[$attr->id]) ? esc($orderValues[$attr->id]) : '';
+                        ?>
+                        <tr>
+                            <td style="width: 200px; font-weight: 600; padding: 10px 0; border: none; border-bottom: 1px solid var(--color-border-light);"><?= esc($attr->frontend_label) ?>:</td>
+                            <td style="padding: 10px 0; border: none; border-bottom: 1px solid var(--color-border-light); color: var(--color-text-light);">
+                                <?php if ($attr->input_type === 'boolean') : ?>
+                                    <?= ($val === '1') ? 'Yes' : 'No' ?>
+                                <?php else : ?>
+                                    <?= $val ?: '<span style="color:var(--color-text-muted); font-style:italic;">[Not Set]</span>' ?>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Edit Form view (Hidden by default) -->
+        <div id="attributes-edit-view" style="display: none; padding-top: 10px;">
+            <form action="" method="POST">
+                <?= csrf_field() ?>
+                <?php foreach ($orderAttributes as $attr) : ?>
+                    <?php 
+                    $val = isset($orderValues[$attr->id]) ? esc($orderValues[$attr->id]) : '';
+                    $required = $attr->is_required ? 'required' : '';
+                    $reqStar = $attr->is_required ? ' <span class="required">*</span>' : '';
+                    ?>
+                    <div class="form-group" style="grid-template-columns: 200px 1fr; margin-bottom: 15px;">
+                        <label for="order-attr-<?= $attr->id ?>"><?= esc($attr->frontend_label) ?><?= $reqStar ?></label>
+                        <div class="form-control-wrapper">
+                            <?php if ($attr->input_type === 'text') : ?>
+                                <input type="text" id="order-attr-<?= $attr->id ?>" name="attributes[<?= $attr->id ?>]" value="<?= $val ?>" class="form-control" <?= $required ?>>
+                            <?php elseif ($attr->input_type === 'textarea') : ?>
+                                <textarea id="order-attr-<?= $attr->id ?>" name="attributes[<?= $attr->id ?>]" class="form-control" rows="2" <?= $required ?>><?= $val ?></textarea>
+                            <?php elseif ($attr->input_type === 'boolean') : ?>
+                                <select id="order-attr-<?= $attr->id ?>" name="attributes[<?= $attr->id ?>]" class="form-control" style="width: 150px;" <?= $required ?>>
+                                    <option value="0" <?= ($val === '0') ? 'selected' : '' ?>>No</option>
+                                    <option value="1" <?= ($val === '1') ? 'selected' : '' ?>>Yes</option>
+                                </select>
+                            <?php elseif ($attr->input_type === 'select') : ?>
+                                <select id="order-attr-<?= $attr->id ?>" name="attributes[<?= $attr->id ?>]" class="form-control" style="width: 250px;" <?= $required ?>>
+                                    <option value="">-- Select Option --</option>
+                                    <?php foreach ($attr->options as $opt) : ?>
+                                        <option value="<?= esc($opt->option_value) ?>" <?= ($val === $opt->option_value) ? 'selected' : '' ?>>
+                                            <?= esc($opt->option_value) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                <div style="display: flex; gap: 10px; margin-top: 15px; padding-left: 200px;">
+                    <button type="submit" class="btn btn-primary" style="padding: 6px 15px;">Save Attributes</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleEditAttributes()" style="padding: 6px 15px;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Items Table -->
 <div class="dashboard-card" style="margin-bottom: 25px;">
     <div class="card-header">Items Ordered</div>
@@ -231,6 +307,20 @@
     function confirmCancel() {
         if (confirm("Are you sure you want to cancel this order? Restocking logic will restore product counts and change order status to 'Canceled'.")) {
             document.getElementById('cancel-form').submit();
+        }
+    }
+
+    function toggleEditAttributes() {
+        const displayView = document.getElementById('attributes-display-view');
+        const editView = document.getElementById('attributes-edit-view');
+        if (displayView && editView) {
+            if (displayView.style.display === 'none') {
+                displayView.style.display = 'block';
+                editView.style.display = 'none';
+            } else {
+                displayView.style.display = 'none';
+                editView.style.display = 'block';
+            }
         }
     }
 </script>

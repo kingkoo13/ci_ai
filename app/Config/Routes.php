@@ -61,6 +61,23 @@ $routes->group('admin', ['filter' => ['admin_auth', 'admin_acl']], function (Rou
     $routes->get('system/cache', 'Admin\System::cache');
     $routes->post('system/cache/flush', 'Admin\System::flush');
     
+    // EAV Attributes & Sets CRUD
+    $routes->get('stores/attributes', 'Admin\Attributes::index');
+    $routes->match(['get', 'post'], 'stores/attributes/new', 'Admin\Attributes::new');
+    $routes->match(['get', 'post'], 'stores/attributes/edit/(:num)', 'Admin\Attributes::edit/$1');
+    $routes->post('stores/attributes/delete/(:num)', 'Admin\Attributes::delete/$1');
+    
+    $routes->get('stores/attributes/sets', 'Admin\Attributes::sets');
+    $routes->match(['get', 'post'], 'stores/attributes/sets/new', 'Admin\Attributes::newSet');
+    $routes->match(['get', 'post'], 'stores/attributes/sets/edit/(:num)', 'Admin\Attributes::editSet/$1');
+    $routes->post('stores/attributes/sets/delete/(:num)', 'Admin\Attributes::deleteSet/$1');
+    
+    // AJAX Dynamic loaders
+    $routes->get('catalog/products/getAttributes', 'Admin\Products::getAttributes');
+    $routes->get('catalog/categories/getAttributes', 'Admin\Categories::getAttributes');
+    $routes->get('customers/getAttributes', 'Admin\Customers::getAttributes');
+    $routes->get('sales/orders/getAttributes', 'Admin\Orders::getAttributes');
+    
     // System Roles CRUD
     $routes->get('system/roles', 'Admin\System::roles');
     $routes->match(['get', 'post'], 'system/roles/new', 'Admin\System::newRole');
