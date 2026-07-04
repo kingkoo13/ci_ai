@@ -16,7 +16,11 @@ class Products extends BaseController
         $offset = ($page - 1) * $perPage;
 
         $search = $this->request->getGet('search') ?: '';
-        $status = $this->request->getGet('status');
+        $filter_status = $this->request->getGet('filter_status');
+        $filter_price_min = $this->request->getGet('filter_price_min');
+        $filter_price_max = $this->request->getGet('filter_price_max');
+        $filter_qty_min = $this->request->getGet('filter_qty_min');
+        $filter_qty_max = $this->request->getGet('filter_qty_max');
 
         $builder = $db->table('products')
                       ->select('products.*, attribute_sets.name as set_name')
@@ -29,8 +33,22 @@ class Products extends BaseController
                     ->groupEnd();
         }
 
-        if ($status !== null && $status !== '') {
-            $builder->where('products.status', (int)$status);
+        if ($filter_status !== null && $filter_status !== '') {
+            $builder->where('products.status', (int)$filter_status);
+        }
+
+        if ($filter_price_min !== null && $filter_price_min !== '') {
+            $builder->where('products.price >=', (float)$filter_price_min);
+        }
+        if ($filter_price_max !== null && $filter_price_max !== '') {
+            $builder->where('products.price <=', (float)$filter_price_max);
+        }
+
+        if ($filter_qty_min !== null && $filter_qty_min !== '') {
+            $builder->where('products.qty >=', (float)$filter_qty_min);
+        }
+        if ($filter_qty_max !== null && $filter_qty_max !== '') {
+            $builder->where('products.qty <=', (float)$filter_qty_max);
         }
 
         // Count total matching records
@@ -61,14 +79,18 @@ class Products extends BaseController
         }
 
         $data = [
-            'menu'        => 'catalog',
-            'submenu'     => 'products',
-            'products'    => $products,
-            'search'      => $search,
-            'status'      => $status,
-            'page'        => $page,
-            'totalPages'  => $totalPages,
-            'totalRows'   => $totalRows
+            'menu'             => 'catalog',
+            'submenu'          => 'products',
+            'products'         => $products,
+            'search'           => $search,
+            'filter_status'    => $filter_status,
+            'filter_price_min' => $filter_price_min,
+            'filter_price_max' => $filter_price_max,
+            'filter_qty_min'   => $filter_qty_min,
+            'filter_qty_max'   => $filter_qty_max,
+            'page'             => $page,
+            'totalPages'       => $totalPages,
+            'totalCount'       => $totalRows
         ];
 
         return view('admin/catalog/products/grid', $data);
