@@ -225,12 +225,8 @@
 
         // Popover for profile dropdown using native Popover target
         const profileBtn = document.getElementById('user-profile-menu');
-        const profileDropdown = document.getElementById('profile-dropdown');
-        if (profileBtn && profileDropdown) {
+        if (profileBtn) {
             profileBtn.setAttribute('popovertarget', 'profile-dropdown');
-            profileBtn.addEventListener('click', () => {
-                profileDropdown.togglePopover();
-            });
         }
     </script>
 </body>
