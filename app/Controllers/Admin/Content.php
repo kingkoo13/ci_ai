@@ -47,11 +47,12 @@ class Content extends BaseController
             }
 
             $pageData = [
-                'title'      => $this->request->getPost('title'),
-                'identifier' => $this->request->getPost('identifier'),
-                'content'    => $this->request->getPost('content'),
-                'is_active'  => $this->request->getPost('is_active') ?? 1,
-                'updated_at' => date('Y-m-d H:i:s')
+                'title'       => $this->request->getPost('title'),
+                'identifier'  => $this->request->getPost('identifier'),
+                'content'     => $this->request->getPost('content'),
+                'page_layout' => $this->request->getPost('page_layout') ?: '1column',
+                'is_active'   => $this->request->getPost('is_active') ?? 1,
+                'updated_at'  => date('Y-m-d H:i:s')
             ];
 
             $db->table('cms_pages')->where('id', $id)->update($pageData);

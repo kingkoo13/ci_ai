@@ -36,6 +36,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'admin_auth'    => \App\Filters\AdminAuthFilter::class,
         'admin_acl'     => \App\Filters\AdminAclFilter::class,
+        'customer_auth' => \App\Filters\CustomerAuthFilter::class,
     ];
 
     /**

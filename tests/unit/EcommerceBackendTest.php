@@ -142,4 +142,91 @@ class EcommerceBackendTest extends CIUnitTestCase
         $this->assertNotNull($orderGift);
         $this->assertEquals('Happy birthday! Enjoy your gifts.', $orderGift->value);
     }
+
+    public function testCmsPageLayoutsSeeded()
+    {
+        $home = $this->db->table('cms_pages')->where('identifier', 'home')->get()->getRow();
+        $this->assertNotNull($home);
+        $this->assertEquals('1column', $home->page_layout);
+
+        $about = $this->db->table('cms_pages')->where('identifier', 'about-us')->get()->getRow();
+        $this->assertNotNull($about);
+        $this->assertEquals('2columns-left', $about->page_layout);
+    }
+
+    public function testStorefrontOrderPlacementFlow()
+    {
+        // 1. Initial product stock check
+        $product = $this->db->table('products')->where('id', 1)->get()->getRow();
+        $this->assertNotNull($product);
+        $initialQty = (int)$product->qty; // 45 seeded
+
+        // 2. Perform mock order insert transaction
+        $this->db->transStart();
+        
+        $orderData = [
+            'increment_id'       => '100000099',
+            'customer_id'        => 1,
+            'customer_email'     => 'test@example.com',
+            'customer_firstname' => 'Test',
+            'customer_lastname'  => 'User',
+            'status'             => 'pending',
+            'subtotal'           => 79.99,
+            'shipping_amount'    => 10.00,
+            'grand_total'        => 89.99,
+            'created_at'         => date('Y-m-d H:i:s')
+        ];
+        $this->db->table('orders')->insert($orderData);
+        $orderId = $dbOrderId = $this->db->insertID();
+
+        // Save order item
+        $this->db->table('order_items')->insert([
+            'order_id'      => $orderId,
+            'product_id'    => 1,
+            'sku'           => 'shoes-01',
+            'name'          => 'Sleek Athletic Running Shoes',
+            'price'         => 79.99,
+            'qty_ordered'   => 1,
+            'qty_invoiced'  => 0,
+            'qty_shipped'   => 0,
+            'row_total'     => 79.99
+        ]);
+
+        // Save Custom EAV Order Attribute (Preferred Delivery Date: attribute 13)
+        $this->db->table('eav_attribute_values')->insert([
+            'entity_type'  => 'order',
+            'entity_id'    => $orderId,
+            'attribute_id' => 13,
+            'value'        => '2026-07-20'
+        ]);
+
+        // Deduct inventory
+        $this->db->table('products')->where('id', 1)->update([
+            'qty' => $initialQty - 1
+        ]);
+
+        $this->db->transComplete();
+
+        // 3. Assertions
+        $this->assertTrue($this->db->transStatus());
+        
+        // Assert order exists
+        $order = $this->db->table('orders')->where('id', $orderId)->get()->getRow();
+        $this->assertNotNull($order);
+        $this->assertEquals('100000099', $order->increment_id);
+
+        // Assert EAV custom attribute is saved
+        $deliveryDate = $this->db->table('eav_attribute_values')
+                                 ->where('entity_type', 'order')
+                                 ->where('entity_id', $orderId)
+                                 ->where('attribute_id', 13)
+                                 ->get()
+                                 ->getRow();
+        $this->assertNotNull($deliveryDate);
+        $this->assertEquals('2026-07-20', $deliveryDate->value);
+
+        // Assert stock is deducted correctly
+        $updatedProduct = $this->db->table('products')->where('id', 1)->get()->getRow();
+        $this->assertEquals($initialQty - 1, (int)$updatedProduct->qty);
+    }
 }

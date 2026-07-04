@@ -89,6 +89,10 @@ class AdminPanelSeeder extends Seeder
             // Order Attributes
             ['id' => 13, 'entity_type' => 'order', 'attribute_code' => 'preferred_delivery_date', 'frontend_label' => 'Preferred Delivery Date', 'input_type' => 'text', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
             ['id' => 14, 'entity_type' => 'order', 'attribute_code' => 'gift_message', 'frontend_label' => 'Gift Wrap Message', 'input_type' => 'textarea', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+
+            // Page Layout attributes for Products & Categories
+            ['id' => 15, 'entity_type' => 'product', 'attribute_code' => 'page_layout', 'frontend_label' => 'Page Layout', 'input_type' => 'select', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
+            ['id' => 16, 'entity_type' => 'category', 'attribute_code' => 'page_layout', 'frontend_label' => 'Page Layout', 'input_type' => 'select', 'attribute_set_id' => null, 'is_required' => 0, 'created_at' => date('Y-m-d H:i:s')],
         ];
         $this->db->table('eav_attributes')->insertBatch($eavAttributes);
 
@@ -115,6 +119,18 @@ class AdminPanelSeeder extends Seeder
             ['attribute_id' => 10, 'option_value' => 'Male'],
             ['attribute_id' => 10, 'option_value' => 'Female'],
             ['attribute_id' => 10, 'option_value' => 'Unspecified'],
+
+            // Page Layout options for Products (attribute_id 15)
+            ['attribute_id' => 15, 'option_value' => '1column'],
+            ['attribute_id' => 15, 'option_value' => '2columns-left'],
+            ['attribute_id' => 15, 'option_value' => '2columns-right'],
+            ['attribute_id' => 15, 'option_value' => '3columns'],
+
+            // Page Layout options for Categories (attribute_id 16)
+            ['attribute_id' => 16, 'option_value' => '1column'],
+            ['attribute_id' => 16, 'option_value' => '2columns-left'],
+            ['attribute_id' => 16, 'option_value' => '2columns-right'],
+            ['attribute_id' => 16, 'option_value' => '3columns'],
         ];
         $this->db->table('eav_attribute_options')->insertBatch($eavAttributeOptions);
 
@@ -221,10 +237,12 @@ class AdminPanelSeeder extends Seeder
             // Shoes size and brand values (product_id 1, attribute 4 (shoe_size) and attribute 3 (brand))
             ['entity_type' => 'product', 'entity_id' => 1, 'attribute_id' => 4, 'value' => 'US 10.5'],
             ['entity_type' => 'product', 'entity_id' => 1, 'attribute_id' => 3, 'value' => 'Nike'],
+            ['entity_type' => 'product', 'entity_id' => 1, 'attribute_id' => 15, 'value' => '1column'], // Page layout for shoes
 
             // Jacket color, size, material (product_id 2, attributes 1, 2)
             ['entity_type' => 'product', 'entity_id' => 2, 'attribute_id' => 1, 'value' => 'Black'],
             ['entity_type' => 'product', 'entity_id' => 2, 'attribute_id' => 2, 'value' => 'L'],
+            ['entity_type' => 'product', 'entity_id' => 2, 'attribute_id' => 15, 'value' => '2columns-right'], // Page layout for jacket
 
             // Shirt color, size (product_id 3)
             ['entity_type' => 'product', 'entity_id' => 3, 'attribute_id' => 1, 'value' => 'Blue'],
@@ -237,6 +255,12 @@ class AdminPanelSeeder extends Seeder
             ['entity_type' => 'category', 'entity_id' => 2, 'attribute_id' => 5, 'value' => 'assets/images/banner-men.jpg'],
             ['entity_type' => 'category', 'entity_id' => 2, 'attribute_id' => 6, 'value' => 'Grid View Only'],
             ['entity_type' => 'category', 'entity_id' => 2, 'attribute_id' => 7, 'value' => '1'],
+            ['entity_type' => 'category', 'entity_id' => 2, 'attribute_id' => 16, 'value' => '2columns-left'], // Category Page layout
+
+            // Category 3 (Women) layout
+            ['entity_type' => 'category', 'entity_id' => 3, 'attribute_id' => 16, 'value' => '2columns-left'],
+            // Category 4 (Accessories) layout
+            ['entity_type' => 'category', 'entity_id' => 4, 'attribute_id' => 16, 'value' => '3columns'], // 3 columns for accessories!
 
             // Customer Attributes values: Customer 1 (Jane Doe) (attributes 8, 9, 10)
             ['entity_type' => 'customer', 'entity_id' => 1, 'attribute_id' => 8, 'value' => '1992-05-15'],
@@ -500,12 +524,13 @@ class AdminPanelSeeder extends Seeder
             'created_at' => date('Y-m-d H:i:s')
         ]);
 
-        // 11. CMS Pages
+        // 11. CMS Pages (with page_layout)
         $cmsPages = [
             [
                 'title' => 'Home Page',
                 'identifier' => 'home',
-                'content' => '<h1>Welcome to our main store front</h1><p>This is standard CMS homepage content.</p>',
+                'content' => '<h1>Welcome to Magento 2 CodeIgniter Edition</h1><p>We supply high quality apparel, running shoes, and luxury accessories. Control this storefront layout directly from the admin panel!</p>',
+                'page_layout' => '1column',
                 'is_active' => 1,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
@@ -513,7 +538,8 @@ class AdminPanelSeeder extends Seeder
             [
                 'title' => 'About Us',
                 'identifier' => 'about-us',
-                'content' => '<h1>About Our Company</h1><p>We supply high quality apparel and electronic accessories.</p>',
+                'content' => '<h1>About Our Company</h1><p>We are a modern, high-speed e-commerce solution powered by CodeIgniter 4 and SQLite.</p>',
+                'page_layout' => '2columns-left',
                 'is_active' => 1,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
@@ -521,7 +547,8 @@ class AdminPanelSeeder extends Seeder
             [
                 'title' => 'Privacy Policy',
                 'identifier' => 'privacy-policy',
-                'content' => '<h1>Privacy Policy</h1><p>Details regarding data storage and policy details.</p>',
+                'content' => '<h1>Privacy Policy</h1><p>Your privacy is important to us. Standard data collection terms apply.</p>',
+                'page_layout' => '1column',
                 'is_active' => 1,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
@@ -542,7 +569,7 @@ class AdminPanelSeeder extends Seeder
             [
                 'title' => 'Promotion Banner Block',
                 'identifier' => 'promo_banner',
-                'content' => '<div class="promo-banner"><h2>Summer Sale! Get 20% off all sportswear.</h2></div>',
+                'content' => '<div style="background:var(--color-primary); color:white; padding:15px; text-align:center; margin-bottom:20px; font-weight:600; border-radius:4px;">Summer Sale! Get 20% off all sportswear. Use Coupon: SUMMER20</div>',
                 'is_active' => 1,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')

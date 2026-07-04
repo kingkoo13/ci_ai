@@ -48,6 +48,18 @@
             </div>
 
             <div class="form-group">
+                <label for="page_layout">Page Layout</label>
+                <div class="form-control-wrapper">
+                    <select id="page_layout" name="page_layout" class="form-control" style="width: 250px;">
+                        <option value="1column" <?= ($page->page_layout === '1column') ? 'selected' : '' ?>>1 column</option>
+                        <option value="2columns-left" <?= ($page->page_layout === '2columns-left') ? 'selected' : '' ?>>2 columns with left bar</option>
+                        <option value="2columns-right" <?= ($page->page_layout === '2columns-right') ? 'selected' : '' ?>>2 columns with right bar</option>
+                        <option value="3columns" <?= ($page->page_layout === '3columns') ? 'selected' : '' ?>>3 columns</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label for="content">HTML Content <span class="required">*</span></label>
                 <div class="form-control-wrapper">
                     <textarea id="content" name="content" rows="12" class="form-control" required placeholder="<h1>Page Header</h1><p>Body...</p>"><?= esc(old('content', $page->content)) ?></textarea>

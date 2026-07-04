@@ -5,15 +5,41 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', function() {
-    return redirect()->to(base_url('admin/dashboard'));
+
+// Public Customer Storefront routes
+$routes->get('/', 'Storefront::index');
+$routes->get('category/(:num)', 'Storefront::category/$1');
+$routes->get('product/(:num)', 'Storefront::product/$1');
+$routes->get('page/(:segment)', 'Storefront::cmsPage/$1');
+
+// Cart routes
+$routes->get('cart', 'Cart::index');
+$routes->post('cart/add', 'Cart::add');
+$routes->post('cart/update', 'Cart::update');
+$routes->get('cart/remove/(:num)', 'Cart::remove/$1');
+$routes->get('cart/minicart', 'Cart::minicart');
+
+// Checkout routes
+$routes->match(['get', 'post'], 'checkout', 'Checkout::index');
+$routes->get('checkout/success', 'Checkout::success');
+
+// Customer accounts routes
+$routes->match(['get', 'post'], 'customer/account/login', 'CustomerPortal::login');
+$routes->match(['get', 'post'], 'customer/account/register', 'CustomerPortal::register');
+$routes->get('customer/account/logout', 'CustomerPortal::logout');
+
+$routes->group('customer', ['filter' => 'customer_auth'], function (RouteCollection $routes) {
+    $routes->get('account', 'CustomerPortal::dashboard');
+    $routes->match(['get', 'post'], 'address/edit/(:num)', 'CustomerPortal::editAddress/$1');
 });
 
-// Authentication routes
+
+// ==========================================
+// Admin Panel routes
+// ==========================================
 $routes->match(['get', 'post'], 'admin/login', 'Admin\Auth::login');
 $routes->get('admin/logout', 'Admin\Auth::logout');
 
-// Admin panel routes with Auth and ACL filters
 $routes->group('admin', ['filter' => ['admin_auth', 'admin_acl']], function (RouteCollection $routes) {
     // Dashboard
     $routes->get('dashboard', 'Admin\Dashboard::index');
