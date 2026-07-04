@@ -223,10 +223,13 @@
             menuItem.classList.toggle('active');
         }
 
-        // Popover for profile dropdown using native Popover target
+        // Popover for profile dropdown using manual click toggle
         const profileBtn = document.getElementById('user-profile-menu');
-        if (profileBtn) {
-            profileBtn.setAttribute('popovertarget', 'profile-dropdown');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        if (profileBtn && profileDropdown) {
+            profileBtn.addEventListener('click', (e) => {
+                profileDropdown.togglePopover();
+            });
         }
     </script>
 </body>
