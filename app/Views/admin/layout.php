@@ -169,7 +169,7 @@
                         <span><?= esc(session()->get('admin_firstname') . ' ' . session()->get('admin_lastname')) ?></span>
                         <i class="fa-solid fa-caret-down"></i>
                         
-                        <div id="profile-dropdown" popover="auto" style="margin-top: 45px; right: 25px; border: 1px solid var(--color-border); border-radius: var(--border-radius); padding: 10px; background: white; box-shadow: var(--shadow-md);">
+                        <div id="profile-dropdown" popover="auto" style="margin: 0; top: 55px; right: 20px; left: auto; bottom: auto; border: 1px solid var(--color-border); border-radius: var(--border-radius); padding: 10px; background: white; box-shadow: var(--shadow-md);">
                             <ul style="display: flex; flex-direction: column; gap: 8px;">
                                 <li><a href="<?= base_url('admin/system/roles') ?>" style="color: var(--color-text);"><i class="fa-solid fa-user-gear"></i> Profile Settings</a></li>
                                 <hr style="border: 0; border-top: 1px solid var(--color-border-light);">
